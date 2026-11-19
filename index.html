@@ -155,6 +155,25 @@ button:focus-visible{outline:3px solid var(--bleu);outline-offset:2px}
 #accueil details{font-size:13px}#accueil summary{cursor:pointer;font-family:var(--titre);color:var(--jaune);padding:6px 0}
 @media (prefers-reduced-motion:reduce){#splash *{animation-duration:.01s!important;animation-delay:0s!important}}
 @media (max-width:520px){#mini{width:92px;height:92px}}
+
+#mire{width:9px;height:9px;margin:-4.5px 0 0 -4.5px;box-shadow:0 0 0 1.5px rgba(0,0,0,.75)}
+#mire.cible{background:#ff4d4d;box-shadow:0 0 0 1px rgba(0,0,0,.7),0 0 10px rgba(255,77,77,.9)}
+#mire.vise.cible{background:none;border-color:#ff4d4d}
+#tourner{position:fixed;inset:0;z-index:60;background:#060d12;color:#f3f1e7;display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--titre,sans-serif);padding:24px}
+#tourner[hidden]{display:none}
+#tourner svg{width:110px;height:110px;animation:pivot 2.4s ease-in-out infinite}
+@keyframes pivot{0%,20%{transform:rotate(0)}55%,100%{transform:rotate(-90deg)}}
+#tourner b{display:block;font-size:22px;margin-top:14px;color:#f7d038}#tourner p{margin:6px 0 0;opacity:.85}
+.gGrille{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:8px 0}
+.gGrille button{pointer-events:auto;font:600 14px var(--titre);text-align:left;padding:10px 12px;line-height:1.25;border-radius:9px;border:1px solid var(--trait);background:rgba(255,255,255,.05);color:var(--texte);cursor:pointer}.gGrille button:hover{background:rgba(247,208,56,.12)}
+.gGrille button small{display:block;opacity:.7;font-size:11px;margin-top:2px;font-weight:500}
+.gIllu{margin:6px 0 10px}.gIllu svg{display:block;width:100%;height:auto;max-height:40vh;border-radius:14px;background:#0d1b22}
+.gEtapes{margin:6px 0 10px;padding-left:22px}.gEtapes li{margin:4px 0;line-height:1.4}
+.gCmd{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0 10px}.gCmd td{padding:5px 6px;border-top:1px solid rgba(255,255,255,.12);vertical-align:top}.gCmd td:first-child{color:#f7d038;white-space:nowrap;font-weight:700;width:1%}
+.gCmd tr.ici td{background:rgba(247,208,56,.1)}
+#cIllu{position:absolute;right:max(14px,3vw);top:calc(11vh + 10px);width:min(330px,38vw);background:rgba(8,16,22,.88);border:1px solid rgba(247,208,56,.6);border-radius:14px;padding:8px;pointer-events:none}
+#cIllu svg{display:block;width:100%;height:auto;border-radius:10px}#cIllu[hidden]{display:none}
+#invite.aideVol{animation:pulse 1s ease-in-out infinite;outline:3px solid #f7d038}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0c1a22">
@@ -193,7 +212,8 @@ button:focus-visible{outline:3px solid var(--bleu);outline-offset:2px}
 <div id="degat"></div>
 <div id="tel" hidden><div class="ecranTel" id="telCorps"></div></div>
 <div id="mort" hidden><div><b id="mortT">Calvine est mort.</b><span id="mortL"></span></div></div>
-<div id="cine" hidden><div class="bande"></div><div id="cNoir"></div><div class="bande bas"><div id="cQui"></div><div id="cTxt"></div></div><div class="cBtn"><button id="cPasser" type="button">Suivant</button><button id="cTout" type="button">Passer la scène</button></div></div>
+<div id="tourner" hidden><div><svg viewBox="0 0 100 100" aria-hidden="true"><rect x="30" y="10" width="40" height="80" rx="8" fill="none" stroke="#f7d038" stroke-width="5"/><circle cx="50" cy="80" r="4" fill="#f7d038"/></svg><b>Tournez votre appareil</b><p>Les Toits de Mbolo se joue à l'horizontale.</p></div></div>
+<div id="cine" hidden><div class="bande"></div><div id="cNoir"></div><div class="bande bas"><div id="cQui"></div><div id="cTxt"></div></div><div id="cIllu" hidden></div><div class="cBtn"><button id="cPasser" type="button">Suivant</button><button id="cTout" type="button">Passer la scène</button></div></div>
 <div class="voile" id="pause" hidden style="z-index:5"><div class="fiche"><div class="tricolore"><b></b><b></b><b></b></div><div class="corps" id="pCorps"></div></div></div>
 <div id="boutique" hidden></div>
 
@@ -5304,10 +5324,12 @@ const ETAPES=[
   {t:'Pont de la rivière',d:'Suivez la route nationale vers le sud et traversez le pont.',x:12.5*PAS+2,z:55.5*PAS,y:1.45},
   {t:'Owenda',d:'Entrez dans Owenda et activez le dernier relais au carrefour central.',x:4.5*PAS,z:84.5*PAS,y:1.15}];
 const cible=balise(0,0,0x35d07f,lueur('rgba(90,230,150,1)'));
-let etape=0,objN=0,prologue={n:3,fait:true},TAXI0=null;
+let etape=0,objN=0,prologue={n:3,fait:true},TAXI0=null;const OBJ_PRO=10000;let epA=0,viseT=0,mireT=0,mireCible=false,ARMU=null;
 function placerTaxiIntro(){const c=prendreAuto('taxi',{x:-47,z:58},0);if(!c)return;c.etat='gare';c.v=0;c.y=0;c.g.visible=true;c.dg=0;c.lache=undefined;poserAuto(c);TAXI0=c}
-function coursePrologue(){if(prologue.fait)return;prologue.n++;if(prologue.n<3){dire('Maya : bien, encore '+(3-prologue.n)+(3-prologue.n>1?' courses.':' course.'),false,3);majObjectif();return}
-  prologue.fait=true;TAXI0=null;for(const b of balises)if(!b.prise){b.o.visible=true;b.ray.visible=etape<=1}sms('Maya',"Bravo Calvine, tu as de quoi démarrer. Maintenant les balises : faisceaux jaunes dans le centre-ville. Reste discret.");dire('Prologue terminé. Étape 1 / '+ETAPES.length+' : '+ETAPES[0].t,false,5);majHud()}const repriseDef={x:centreLot(DEPART.i),y:hEt(1),z:centreLot(DEPART.j)};let reprise=repriseDef;
+function coursePrologue(){if(prologue.fait)return;prologue.n++;if(argent<OBJ_PRO){dire('Maya : bien joué ! Encore '+fcfa(OBJ_PRO-argent)+' pour atteindre '+fcfa(OBJ_PRO)+'.',false,3.5);majObjectif();return}finPrologue()}
+function finPrologue(){if(prologue.fait)return;prologue.fait=true;TAXI0=null;for(const b of balises)if(!b.prise){b.o.visible=true;b.ray.visible=etape<=1}trajetT=0;
+  sms('Maya',"Bravo Calvine, tu as gagné "+fcfa(OBJ_PRO)+" ! On passe à la suite : récupère les balises sur les toits du centre-ville, faisceaux jaunes. Suis le trajet jaune sur ta carte et fais attention aux patrouilles.");
+  dire('Nouvel objectif : récupérez les balises sur les toits. Suivez le trajet jaune sur la carte et méfiez-vous des patrouilles.',false,6);majHud()}const repriseDef={x:centreLot(DEPART.i),y:hEt(1),z:centreLot(DEPART.j)};let reprise=repriseDef;
 function lireSauvegarde(){let m=null;for(const k in SV.cache){const d=SV.cache[k];if(d&&(!m||d.date>m.date))m=d}return m}
 function sauvegarder(){ecrire('auto')}
 function viserCible(){const E=ETAPES[etape],vu=!!E&&E.x!==undefined&&!E.ant;cible.o.visible=cible.ray.visible=vu;
@@ -5315,7 +5337,7 @@ function viserCible(){const E=ETAPES[etape],vu=!!E&&E.x!==undefined&&!E.ant;cibl
   for(const b of balises)if(!b.prise)b.ray.visible=etape<=1;antenne.ray.visible=etape<=2}
 function majObjectif(){const A=$('objA');if(mission){A.textContent=texteMission();A.hidden=false}else if(annexe){const d=annexe.d,c=cibleAnnexe();
     A.textContent='Annexe · '+d.nom+(c?' · à '+Math.round(Math.hypot(c.x-J.x,c.z-J.z))+' m':'')+(d.type==='chrono'||d.type==='poursuite'?' · '+Math.ceil(annexe.t)+' s':'')+' · faisceau orange';A.hidden=false}else A.hidden=true;
-  if(!prologue.fait){$('objT').textContent='Prologue · gagner de l\'argent';$('objD').textContent='Montez dans le taxi garé juste à côté, lancez le service (F ou bouton Taxi) et faites 3 courses : '+prologue.n+' / 3.';$('objM').textContent=auto&&auto.type==='taxi'?'Suivez les clients':'Taxi jaune et vert, à côté du point de départ';return}
+  if(!prologue.fait){$('objT').textContent='Prologue · gagner '+fcfa(OBJ_PRO);$('objD').textContent='Montez dans le taxi garé juste à côté, lancez le service (F ou bouton Taxi) et faites des courses jusqu\'à '+fcfa(OBJ_PRO)+' : '+fcfa(Math.max(0,argent))+' / '+fcfa(OBJ_PRO)+'.';$('objM').textContent=auto&&auto.type==='taxi'?'Suivez les clients':'Taxi jaune et vert, à côté du point de départ';return}
   const E=ETAPES[etape];if(!E)return;$('objT').textContent='Objectif · '+E.t;$('objD').textContent=E.d+(E.bal?' ('+Math.min(nbPrises,E.bal)+' / '+E.bal+')':E.pay?' ('+Math.min(nbPayees,E.pay)+' / '+E.pay+')':'');
   $('objM').textContent=E.bal?'Faisceaux jaunes':E.pay?'Faisceaux rouges · prix affiché':'À '+Math.round(Math.hypot(E.x-J.x,E.z-J.z))+' m · faisceau '+(E.ant?'bleu':'vert')}
 function etapeSuivante(){reprise={x:J.x,y:J.y,z:J.z};etape++;sauvegarder();
@@ -5334,7 +5356,7 @@ let argent=0,faites={},auto=null,dialogue=null,annexe=null,inviteFn=null,sourisT
 function lireAnnexes(){}
 function ecrireAnnexes(){ecrire('auto')}
 const fcfa=n=>n.toLocaleString('fr-FR').replace(/\s/g,' ')+' F';
-function majArgent(){const e=$('argent');e.textContent=fcfa(argent);e.style.color=argent<0?'#ff8f8f':''}
+function majArgent(){const e=$('argent');e.textContent=fcfa(argent);e.style.color=argent<0?'#ff8f8f':'';if(!prologue.fait&&argent>=OBJ_PRO&&etat==='jeu')setTimeout(finPrologue,0)}
 function inviter(txt,fn){if(txt===undefined)return;const b=$('invite');if(!txt){if(!b.hidden)b.hidden=true;inviteFn=null;return}if(b.textContent!==txt)b.textContent=txt;if(b.hidden)b.hidden=false;inviteFn=fn}
 const lampeJ=new THREE.PointLight(0xffe6bf,0,34,1.3);scene.add(lampeJ); // halo qui accompagne le joueur la nuit
 
@@ -5471,8 +5493,8 @@ function finAnnexe(ok,msg){const d=annexe.d;cacher(cibleA);colis.forEach(cacher)
   else if(msg!==0)dire(msg||'Mission annexe échouée. Retournez voir '+d.nom+' pour réessayer.',true,4.5);
   majObjectif()}
 function action(){if(etat!=='jeu')return;if(dialogue){accepter();return}if(sport){finSport();return}if(auto){sortir();return}
-  if(voyage){const v=voyage;v.R.s=v.G.s;placerRame(v.R);descendre();return}if(actionMission())return;const rq=rdvProche();if(rq){lancerMission(rq.def);return}const aa=activiteProche();if(aa){lancerMission(aa);return}const aq=ascProche();if(aq){actionAsc(aq);return}if(bandeMenace){payerBande();return}const gq=gareProche();if(gq){ouvrirGare(gq);return}const d=donneurProche();if(d){ouvrirDialogue(d);return}const v=cibleVol();if(v){voler(v);return}const sp=sportProche();if(sp){demarrerSport(sp);return}if(shopProche()){ouvrirBoutique('boutique');return}const c=autoProche();if(c)monter(c)}
-function invitePlus(e){if(inviteMission(e))return true;const aq=ascProche();if(aq){inviter(e+(aq.dans?(aq.a.y<1?'Ascenseur : monter au toit':'Ascenseur : redescendre'):'Appeler l\'ascenseur'),action);return true}if(bandeMenace){inviter(e+'Donner 500 F pour passer',action);return true}const gq=gareProche();if(gq){inviter(e+(gq.L.id==='metro'?'Prendre le métro':'Prendre le train')+' · '+gq.G.nom,action);return true}const v=cibleVol();if(v){inviter(e+(v.eP==='ko'?'Fouiller':'Voler discrètement · '+Math.round(chanceVol(v)*100)+' % de réussite'),action);return true}
+  if(voyage){const v=voyage;v.R.s=v.G.s;placerRame(v.R);descendre();return}if(actionMission())return;const rq=rdvProche();if(rq){lancerMission(rq.def);return}const aa=activiteProche();if(aa){lancerMission(aa);return}const aq=ascProche();if(aq){actionAsc(aq);return}if(bandeMenace){payerBande();return}const gq=gareProche();if(gq){ouvrirGare(gq);return}const d=donneurProche();if(d){ouvrirDialogue(d);return}if(armurerieProche()){ouvrirArmurerie();return}const v=cibleVol();if(v){voler(v);return}const sp=sportProche();if(sp){demarrerSport(sp);return}if(shopProche()){ouvrirBoutique('boutique');return}const c=autoProche();if(c)monter(c)}
+function invitePlus(e){if(inviteMission(e))return true;const aq=ascProche();if(aq){inviter(e+(aq.dans?(aq.a.y<1?'Ascenseur : monter au toit':'Ascenseur : redescendre'):'Appeler l\'ascenseur'),action);return true}if(bandeMenace){inviter(e+'Donner 500 F pour passer',action);return true}const gq=gareProche();if(gq){inviter(e+(gq.L.id==='metro'?'Prendre le métro':'Prendre le train')+' · '+gq.G.nom,action);return true}if(armurerieProche()){inviter(e+'Armurerie · acheter des armes et des munitions',action);return true}const v=cibleVol();if(v){inviter(e+(v.eP==='ko'?'Fouiller':'Voler discrètement · '+Math.round(chanceVol(v)*100)+' % de réussite'),action);return true}
   const sp=sportProche();if(sp){inviter(e+sp.n,action);return true}if(shopProche()){inviter(e+'Entrer dans la boutique de vêtements',action);return true}return false}
 function majAnnexe(dt){
   if(annexe){const d=annexe.d;
@@ -5642,7 +5664,7 @@ function cibleAnnexe(){if(!annexe)return null;const d=annexe.d;
   if(d.type==='poursuite')return V;if(d.type==='vol')return annexe.n?d.pos:d.objet;return d.cible||null}
 function majTrajet(dt){trajetT-=dt;if(trajetT>0)return;trajetT=1;let c=cibleAnnexe();trajetC='#ff8a2a';
   if(!c&&gpsCible){c=gpsCible;trajetC='#f7d038'}
-  if(!c){const E=ETAPES[etape];if(E&&E.x!==undefined){c=E;trajetC='#35d07f'}}
+  if(!c){const E=ETAPES[etape];if(E&&E.x!==undefined){c=E;trajetC='#35d07f'}else if(E&&E.bal&&prologue.fait){let bd=1e9;for(const b of balises)if(!b.prise&&!b.prix&&b.o.visible){const d=Math.hypot(b.x-J.x,b.z-J.z);if(d<bd){bd=d;c=b}}if(c)trajetC='#f7d038'}}
   trajet=c&&!(auto&&auto.air)?calculerTrajet(c.x,c.z):null}
 
 /* ---------- balises payantes, commissariats, amende ---------- */
@@ -5933,7 +5955,7 @@ function majJoueur(dt){
   if(J.sol)J.souffle=Math.min(100,J.souffle+38*dt);
   J.air=J.sol||J.grimpe?0:J.air+dt;
   const vh=Math.hypot(J.vx,J.vz);
-  if(J.grimpe)J.ang=tourner(J.ang,gN,Math.min(1,dt*12));else if(arsenal.visee)J.ang=tourner(J.ang,lacet+PI,Math.min(1,dt*20));else if(bouge&&vh>.3)J.ang=tourner(J.ang,Math.atan2(J.vx,J.vz),Math.min(1,dt*10));
+  if(J.grimpe)J.ang=tourner(J.ang,gN,Math.min(1,dt*12));else if(arsenal.visee||viseT>0)J.ang=tourner(J.ang,lacet+PI,Math.min(1,dt*20));else if(bouge&&vh>.3)J.ang=tourner(J.ang,Math.atan2(J.vx,J.vz),Math.min(1,dt*10));
   placerJoueur();
   const mode=J.grimpe?'grimpe':J.nage?'marche':J.air>.16?'chute':J.discret?'discret':vh<.35?'repos':court&&vh>5.6?'sprint':vh>2.6?'course':'marche';
   joueur.maj(dt,mode,J.nage?1.2+vh*.5:vh);
@@ -5984,19 +6006,21 @@ function majObjets(dt,t){if(prixT>0)prixT-=dt;
 function gagner(){etat='fin';$('fTemps').textContent=fmt(temps);$('fArrets').textContent=arrets;$('fin').hidden=false;$('hud').hidden=true;$('tactile').hidden=true;
   if(document.exitPointerLock)document.exitPointerLock();[523,659,784,1046].forEach((f,i)=>setTimeout(()=>bip(f,.25),i*130))}
 const camV=new THREE.Vector3();
+function epaule(){return etat==='jeu'&&!auto&&!J.nage&&!J.grimpe&&!sport&&!voyage&&arme()&&!ARMES[arsenal.act].lance}
 function majCamera(dt){
   const cy=J.y+(auto?(auto.air?3:auto.mer?1.6:auto.deux?1.5:1.9):J.nage?1.1:1.45),dist=auto?(auto.air?(auto.type==='jet'?26:17):auto.mer?(auto.type==='peche'?17:11):auto.deux?7:(TACTILE?11:9.5)):voyage?(voyage.R.L.id==='metro'?16:22):(TACTILE?6.5:5.2);let ok=dist;
   const ox=Math.sin(lacet)*Math.cos(tangage),oy=Math.sin(tangage),oz=Math.cos(lacet)*Math.cos(tangage);
   if(arsenal.visee&&!auto){const rx=Math.cos(lacet),rz=-Math.sin(lacet),bx=J.x+rx*.62,bz=J.z+rz*.62,by=J.y+1.6;let d=ARMES[arsenal.act].zoom?1.4:2.3;
     for(let k=1;k<=6;k++){const q=d*k/6,x=bx+ox*q,z=bz+oz*q,y=by+oy*q;let dedans=false;for(const b of proches(x,z))if(!b.eau&&x>b.x0-.2&&x<b.x1+.2&&z>b.z0-.2&&z<b.z1+.2&&y<b.h+.2&&(!b.bas||y>b.bas-.2)){dedans=true;break}if(dedans){d=Math.max(.5,q-.3);break}}
     camV.set(bx+ox*d,Math.max(.4,by+oy*d),bz+oz*d);camera.position.lerp(camV,1-Math.exp(-dt*30));camera.lookAt(bx-ox*20,by-oy*20,bz-oz*20);return}
-  for(let k=1;k<=13;k++){const d=dist*k/13,x=J.x+ox*d,z=J.z+oz*d,y=cy+oy*d;
+  epA+=((epaule()?1:0)-epA)*Math.min(1,dt*9);const eR=epA*.75,pbx=J.x+Math.cos(lacet)*eR,pbz=J.z-Math.sin(lacet)*eR,pcy=cy+epA*.28,dE=dist*(1-.22*epA);ok=dE;
+  for(let k=1;k<=13;k++){const d=dE*k/13,x=pbx+ox*d,z=pbz+oz*d,y=pcy+oy*d;
     if(y<.3){ok=Math.max(.8,d-.5);break}
     let dedans=false;for(const b of proches(x,z))if(!b.eau&&x>b.x0-.3&&x<b.x1+.3&&z>b.z0-.3&&z<b.z1+.3&&y<b.h+.3&&(!b.bas||y>b.bas-.3)){dedans=true;break}
     if(dedans){ok=Math.max(.8,d-.6);break}}
-  camV.set(J.x+ox*ok,Math.max(.4,cy+oy*ok),J.z+oz*ok);
+  camV.set(pbx+ox*ok,Math.max(.4,pcy+oy*ok),pbz+oz*ok);
   if(camOk)camera.position.lerp(camV,1-Math.exp(-dt*18));else{camera.position.copy(camV);camOk=true}
-  camera.lookAt(J.x,cy,J.z)}
+  camera.lookAt(pbx,pcy,pbz)}
 
 /* ---------- minicarte locale (M ou clic : vue d'ensemble) et nom du quartier ---------- */
 const mini=$('mini'),mc=mini.getContext('2d');let grande=false,miniN=0;
@@ -6136,6 +6160,13 @@ const ARMES={poing:{n:'Poings',cap:0},
 const ORDRE=['poing','pistolet','smg','pompe','fusil','precision','grenade'];
 const arsenal={poss:{poing:1},mun:{},charg:{},act:'poing',rech:0,cd:0,visee:false,feu:false,pret:0};
 function donnerArme(k,mun){arsenal.poss[k]=1;arsenal.mun[k]=(arsenal.mun[k]||0)+(mun||0);if(ARMES[k].cap&&!(arsenal.charg[k]>0)){const n=Math.min(ARMES[k].cap,arsenal.mun[k]);arsenal.charg[k]=n;arsenal.mun[k]-=n}majArmeHud()}
+function armurerieProche(){if(auto||sport||etat!=='jeu'||J.y>1.5)return null;if(!ARMU)ARMU=lieux('armurerie').map(p=>({x:p.x,z:p.z-5.6}));for(const q of ARMU)if(Math.hypot(q.x-J.x,q.z-J.z)<4.2)return q;return null}
+function ouvrirArmurerie(){const opts=[];for(const k of ORDRE){if(k==='poing')continue;const A=ARMES[k];
+    if(!arsenal.poss[k])opts.push({t:'Acheter · '+A.n+' · '+fcfa(A.prix)+(A.pack?' (avec '+A.pack[0]+(A.lance?')':' munitions)'):''),fn:()=>acheterArme(k,false)});
+    else if(A.pack)opts.push({t:(A.lance?'Recharge · ':'Munitions · ')+A.n+' · +'+A.pack[0]+' · '+fcfa(A.pack[1]),fn:()=>acheterArme(k,true)})}
+  menuChoix('Armurerie','Argent : '+fcfa(argent)+'. Choisissez une arme ou des munitions. Changez ensuite d\'arme avec le bouton Arme, la touche X ou la croix de la manette.',opts)}
+function acheterArme(k,mun){const A=ARMES[k],p=mun?A.pack[1]:A.prix;if(argent<p){dire('Il vous faut '+fcfa(p)+'.',true,2.5);return}argent-=p;majArgent();donnerArme(k,A.pack?A.pack[0]:0);if(!mun)choisirArme(k);bip(880,.08);
+  dire(mun?'Munitions achetées : '+A.n+'.':'Nouvelle arme : '+A.n+'. Le point blanc au centre de l\'écran montre où partent les balles.',false,4);setTimeout(()=>{if(etat==='jeu'&&armurerieProche())ouvrirArmurerie()},400)}
 function choisirArme(k){if(!arsenal.poss[k]||arsenal.act===k)return;arsenal.act=k;arsenal.rech=0;arsenal.visee=arsenal.visee&&k!=='poing'&&k!=='grenade';bip(700,.04,'square',.03);majArmeHud();modeTactile()}
 function cyclerArme(s){const L=ORDRE.filter(k=>arsenal.poss[k]&&(k!=='grenade'||arsenal.mun.grenade>0));let i=L.indexOf(arsenal.act);i=(i+s+L.length)%L.length;choisirArme(L[i])}
 function recharger(){const k=arsenal.act,A=ARMES[k];if(!A.cap||arsenal.rech>0||arsenal.charg[k]>=A.cap||!(arsenal.mun[k]>0))return;arsenal.rech=A.rech*(1-.4*COMP.tir/100);bip(260,.08,'square',.03);majArmeHud()}
@@ -6203,6 +6234,9 @@ function degatsEnnemi(e,dg,parJoueur){if(e.mort)return;e.pv-=dg;e.choc=.25;if(e.
 function alerterGroupe(e){for(const o of ennemis)if(o.actif&&!o.mort&&o.groupe===e.groupe&&o.etat!=='combat')o.etat='combat'}
 // tir du joueur
 const cDir=new THREE.Vector3();
+function aideVisee(port){camera.getWorldDirection(cDir);const cx=camera.position.x,cy=camera.position.y,cz=camera.position.z;let m=null,ms=Math.cos((TACTILE?6:3.5)*PI/180);
+  for(const p of persos()){const P=posP(p),hx=P.x-cx,hy=(P.y||0)+1.15-cy,hz=P.z-cz,d=Math.hypot(hx,hy,hz);if(d<1.5||d>port+6)continue;const c=(hx*cDir.x+hy*cDir.y+hz*cDir.z)/d+(hostile(p)?.003:0);
+    if(c>ms&&vueLibre(J.x,J.z,P.x,P.z)){ms=c;m={x:P.x,y:(P.y||0)+1.15,z:P.z}}}return m}
 function cibleAuto(port,fx,fz){let m=null,ms=-1;for(const p of persos()){const P=posP(p),dx=P.x-J.x,dz=P.z-J.z,d=Math.hypot(dx,dz);if(d<1||d>port)continue;const c=(dx*fx+dz*fz)/d;if(c<.55)continue;
   const s=c*2-d/port+(hostile(p)?2:0);if(s>ms&&vueLibre(J.x,J.z,P.x,P.z)){ms=s;m=p}}return m}
 function tirer(){if(etat!=='jeu'||sport&&!sport.tir||J.nage||J.grimpe||dialogue)return;const k=arsenal.act,A=ARMES[k];
@@ -6210,12 +6244,13 @@ function tirer(){if(etat!=='jeu'||sport&&!sport.tir||J.nage||J.grimpe||dialogue)
   if(auto&&(auto.air||auto.type==='velo'))return;if(arsenal.rech>0||arsenal.cd>0)return;
   if(!(arsenal.charg[k]>0)){if(!(arsenal.mun[k]>0)&&!(sport&&sport.tir)){dire('Plus de munitions : passez à une armurerie.',true,2);bip(140,.05,'square',.04);arsenal.cd=.4}else recharger();return}
   arsenal.charg[k]--;arsenal.cd=A.cad;let ox=J.x,oy=J.y+1.45,oz=J.z,dx,dy,dz;
-  if(arsenal.visee&&!auto){camera.getWorldDirection(cDir);dx=cDir.x;dy=cDir.y;dz=cDir.z;const h=rayon(camera.position.x,camera.position.y,camera.position.z,dx,dy,dz,A.port+8,null);
-    const px=camera.position.x+dx*h.t,py=camera.position.y+dy*h.t,pz=camera.position.z+dz*h.t;dx=px-ox;dy=py-oy;dz=pz-oz}
+  const epT=!auto&&(arsenal.visee||epaule());
+  if(epT){camera.getWorldDirection(cDir);dx=cDir.x;dy=cDir.y;dz=cDir.z;const aa=aideVisee(A.port);if(aa){dx=aa.x-camera.position.x;dy=aa.y-camera.position.y;dz=aa.z-camera.position.z;const l0=Math.hypot(dx,dy,dz)||1;dx/=l0;dy/=l0;dz/=l0}const h=rayon(camera.position.x,camera.position.y,camera.position.z,dx,dy,dz,A.port+8,null);
+    const px=camera.position.x+dx*h.t,py=camera.position.y+dy*h.t,pz=camera.position.z+dz*h.t;dx=px-ox;dy=py-oy;dz=pz-oz;if(!arsenal.visee){J.ang=Math.atan2(dx,dz);viseT=.8}}
   else{const fx=auto?Math.sin(auto.ang):Math.sin(J.ang),fz=auto?Math.cos(auto.ang):Math.cos(J.ang),c=cibleAuto(A.port,fx,fz);if(auto)oy=(auto.y||0)+1.5;
     if(c){const P=posP(c);dx=P.x-ox;dy=(P.y||0)+1.15-oy;dz=P.z-oz;if(!auto)J.ang=Math.atan2(dx,dz)}else{dx=fx;dy=0;dz=fz}}
   const l=Math.hypot(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l;
-  for(let n=0;n<(A.plombs||1);n++){const e=A.disp*(arsenal.visee?.6:1.5)*(auto?2:1),ex=dx+(Math.random()-.5)*2*e,ey=dy+(Math.random()-.5)*2*e,ez=dz+(Math.random()-.5)*2*e,q=Math.hypot(ex,ey,ez);
+  for(let n=0;n<(A.plombs||1);n++){const e=A.disp*(arsenal.visee?.6:epT?.9:1.5)*(auto?2:1),ex=dx+(Math.random()-.5)*2*e,ey=dy+(Math.random()-.5)*2*e,ez=dz+(Math.random()-.5)*2*e,q=Math.hypot(ex,ey,ez);
     const h=rayon(ox,oy,oz,ex/q,ey/q,ez/q,A.port,null),hx=ox+ex/q*h.t,hy=oy+ey/q*h.t,hz=oz+ez/q*h.t;
     if(n<2)tracante(ox+ex/q*.7,oy+ey/q*.7,oz+ez/q*.7,hx,hy,hz);if(h.k){effet(FUMEE,hx,hy,hz,.35,.4,.5);toucher(h,A.dg,true)}}
   effet(LUEUR_TIR,ox+dx*.8,oy+dy*.8,oz+dz*.8,.9,.06,0,true);detonation(A.son[0],A.son[1]*3,.22);
@@ -6330,8 +6365,8 @@ function majSecours(dt){for(const c of autos){if(c.type!=='ambulance'||c===auto|
 function majArmes(dt){if(arsenal.cd>0)arsenal.cd-=dt;if(arsenal.rech>0){arsenal.rech-=dt;if(arsenal.rech<=0){const k=arsenal.act,A=ARMES[k],n=sport&&sport.tir?A.cap:Math.min(A.cap-(arsenal.charg[k]||0),arsenal.mun[k]||0);arsenal.charg[k]=(arsenal.charg[k]||0)+n;if(!(sport&&sport.tir))arsenal.mun[k]-=n}majArmeHud()}
   const k=arsenal.act,A=ARMES[k],tient=arme()&&!auto&&!J.nage&&!J.grimpe&&!sport;
   if(A&&A.auto&&arsenal.feu&&etat==='jeu')tirer();
-  arsenal.visee=arsenal.visee&&arme()&&!A.lance&&!auto&&!J.nage&&(!sport||sport.tir);$('mire').hidden=!(etat==='jeu'&&(arsenal.visee||(arme()&&!TACTILE&&!auto&&!sport)));$('mire').className=arsenal.visee?'vise':'';
-  if(joueur&&joueur.os){if(tient&&!A.lance){let p=0;if(arsenal.visee){camera.getWorldDirection(cDir);p=Math.asin(clamp(cDir.y,-1,1))}const deux=k!=='pistolet';poseTir(joueur,J.ang,p,deux);for(const q of ORDRE)if(q!=='poing'&&q!==k)ARMESV[q].visible=false;porterArme(joueur,k,J.ang,p,ARMESV[k])}
+  arsenal.visee=arsenal.visee&&arme()&&!A.lance&&!auto&&!J.nage&&(!sport||sport.tir);viseT=Math.max(0,viseT-dt);const epM=epaule(),mv=etat==='jeu'&&(arsenal.visee||epM);$('mire').hidden=!mv;if(mv&&(mireT-=dt)<=0){mireT=.12;mireCible=!!aideVisee(A.port||40)}{const cn=(arsenal.visee?'vise':'')+(mv&&mireCible?' cible':'');if($('mire').className!==cn)$('mire').className=cn}
+  if(joueur&&joueur.os){if(tient&&!A.lance){let p=0;if(arsenal.visee||epM||viseT>0){camera.getWorldDirection(cDir);p=Math.asin(clamp(cDir.y,-1,1))}const deux=k!=='pistolet';poseTir(joueur,J.ang,p,deux);for(const q of ORDRE)if(q!=='poing'&&q!==k)ARMESV[q].visible=false;porterArme(joueur,k,J.ang,p,ARMESV[k])}
     else for(const q of ORDRE)if(q!=='poing')ARMESV[q].visible=sport&&sport.tir&&q==='pistolet'?ARMESV[q].visible:false}
   bandeMenace=majGangs(dt);majGrenades(dt);majEnnemis(dt);majFeux(dt);reparerVehicules(dt);majSecours(dt);majFX(dt);
   if(secousse>0){secousse=Math.max(0,secousse-dt*1.2);camera.position.x+=(Math.random()-.5)*secousse;camera.position.y+=(Math.random()-.5)*secousse}}
@@ -7046,10 +7081,10 @@ function pause(on){if(on){if(etat!=='jeu')return;etat='pause';ecran('menu');$('p
 function fermerPanneau(){if(etat==='pause')ecran('menu');else $('pause').hidden=true}
 function ecran(nom,arg){const R=$('pCorps');R.innerHTML='';const jeu=etat==='pause',T=t=>el('h1',t,'',R),M=()=>el('div',null,'menu',R),retour=m=>bouton(m,'← Retour',fermerPanneau);
   if(nom==='menu'){el('div','Jeu en pause · tout est suspendu','etiq',R);T('Pause');majObjectif();const ob=el('div',null,'objectif',R);if(mission){el('div','Mission en cours · '+mission.def.titre,'etiq',ob);el('div',texteMission(),'',ob)}else if(rdv)el('div','Rendez-vous : '+rdv.def.don.nom+' · '+rdv.def.titre,'etiq',ob);el('div',$('objT').textContent+' · étape '+Math.min(etape+1,ETAPES.length)+' / '+ETAPES.length,'etiq',ob);el('div',$('objD').textContent,'',ob);el('div',$('objM').textContent+' · temps de jeu '+fmt(temps)+' · '+arrets+(arrets>1?' arrestations':' arrestation'),'petit',ob);const m=M();bouton(m,'Reprendre',()=>pause(false));bouton(m,'Sauvegarder',()=>ecran('sauver'));bouton(m,'Charger une partie',()=>ecran('charger'));
-    bouton(m,'Carte',()=>{grande=true;miniN=0;pause(false)});bouton(m,'Missions',()=>ecran('missions'));bouton(m,'Inventaire et tenue',()=>ouvrirBoutique('dressing'));bouton(m,'Statistiques',()=>ecran('stats'));bouton(m,'Paramètres',()=>ecran('reglages'));bouton(m,'Signaler un problème',()=>ecran('rapport'));
+    bouton(m,'Carte',()=>{grande=true;miniN=0;pause(false)});bouton(m,'Missions',()=>ecran('missions'));bouton(m,'Inventaire et tenue',()=>ouvrirBoutique('dressing'));bouton(m,'Statistiques',()=>ecran('stats'));bouton(m,'Comment faire ? (guide)',()=>{guideDe='menu';ecran('guide')});bouton(m,'Paramètres',()=>ecran('reglages'));bouton(m,'Signaler un problème',()=>ecran('rapport'));
     bouton(m,'Retour au menu principal',()=>{ecrire('auto');etat='menu';$('pause').hidden=true;$('hud').hidden=true;$('tactile').hidden=true;$('accueil').hidden=false;etatBouton()})}
   else if(nom==='rapport'){T('Signaler un problème');el('p',"Copiez ce rapport et envoyez-le à Claude avec quelques mots sur ce qui s'est passé.",'petit',R);
-    const txt=['Les Toits de Mbolo v18','Appareil : '+navigator.userAgent,'Écran : '+innerWidth+'×'+innerHeight+' · tactile : '+TACTILE,'Images/s : '+Math.round(ipsJ)+' · qualité : '+palier+' · images très lentes : '+lentes,
+    const txt=['Les Toits de Mbolo v19','Appareil : '+navigator.userAgent,'Écran : '+innerWidth+'×'+innerHeight+' · tactile : '+TACTILE,'Images/s : '+Math.round(ipsJ)+' · qualité : '+palier+' · images très lentes : '+lentes,
       'État : '+etat+' · véhicule : '+(auto?auto.type+' '+Math.round(Math.abs(auto.v)*3.6)+' km/h':'à pied')+' · position '+Math.round(J.x)+', '+Math.round(J.y)+', '+Math.round(J.z)+' · '+(mission?'mission '+mission.def.id:'hors mission'),
       'Radio : '+STATIONS[RADIO.st].n+' · audio : '+(audio?audio.state:'aucun'),'--- Journal ---'].concat(JOURNAL.length?JOURNAL:['(aucune erreur notée)']).join('\n');
     const ta=el('textarea',null,'',R);ta.value=txt;ta.readOnly=true;ta.style.cssText='width:100%;height:190px;font:12px/1.4 monospace;border-radius:10px;padding:8px;border:0';
@@ -7067,13 +7102,109 @@ function ecran(nom,arg){const R=$('pCorps');R.innerHTML='';const jeu=etat==='pau
   else if(nom==='missions'){T('Missions');el('div','Mission principale','etiq',R);const L=el('div',null,'liste',R);ETAPES.forEach((E,k)=>el('div',(k<etape?'✓ ':k===etape?'▶ ':'· ')+(k+1)+'. '+E.t+(k===etape?' : '+E.d:''),k===etape?'':'petit',L));
     const n=DONNEURS.filter(d=>faites[d.id]).length;el('div','Missions annexes · '+n+' / '+DONNEURS.length+' réussies','etiq',R);const L2=el('div',null,'liste',R);for(const d of DONNEURS)el('div',(faites[d.id]?'✓ ':'· ')+d.nom+' · '+fcfa(d.gain),'petit',L2);retour(M())}
   else if(nom==='stats'){T('Statistiques');const L=el('div',null,'liste',R);[['Temps de jeu',fmt(temps)],['Étape',Math.min(etape+1,ETAPES.length)+' / '+ETAPES.length],['Argent',fcfa(argent)],['Santé',Math.round(J.pv)+' %'],['Missions annexes réussies',DONNEURS.filter(d=>faites[d.id]).length+' / '+DONNEURS.length],['Arrestations',arrets],['Coups portés',stats.coups],['Mises hors de combat',stats.ko],['Vols réussis',stats.vols],['Vols ratés',stats.rates],['Record tirs au but',scores.foot+' / 5'],['Record lancers au panier',scores.basket+' / 5'],['Vêtements possédés',Object.values(garde).reduce((a,g)=>a+g.length,0)],...Object.keys(COMP).map(k=>['Compétence · '+NOMCOMP[k],Math.floor(COMP[k])+' / 100']),['Masques punu trouvés',Object.keys(masquesPris).length+' / '+MASQUES.length],['Sauts uniques',Object.keys(sautsFaits).length+' / '+SAUTS.length]].forEach(([a,b])=>{const l=el('div',null,'art',L);el('span',a,'',l);el('span',String(b),'',l)});retour(M())}
-  else if(nom==='reglages'){T('Paramètres');const reg=(txt,k,min,max,pas)=>{el('div',txt,'etiq',R);const i=el('input',null,'',R);i.type='range';i.min=min;i.max=max;i.step=pas;i.value=regl[k];i.oninput=()=>{regl[k]=+i.value;ecrireRegl();if(k==='vol')bip(660,.08)}};
+  else if(nom==='guide'){T('Comment faire ?');el('p','Choisissez un sujet : une petite animation montre le geste, puis les étapes et les commandes de votre appareil.','petit',R);const g=el('div',null,'gGrille',R);
+    for(const G of GUIDE){const b=bouton(g,null,()=>ecran('guideS',G.id));b.textContent=G.ic+' '+G.t;el('small',G.r,'',b)}bouton(M(),'← Retour',()=>ecran(guideDe))}
+  else if(nom==='guideS'){const k=Math.max(0,GUIDE.findIndex(g=>g.id===arg)),G=GUIDE[k];el('div','Comment faire ? · '+(k+1)+' / '+GUIDE.length,'etiq',R);T(G.ic+' '+G.t);const il=el('div',null,'gIllu',R);il.innerHTML=G.svg;
+    const ol=el('ol',null,'gEtapes',R);for(const x of G.etapes)el('li',x,'',ol);el('div','Commandes','etiq',R);const tb=el('table',null,'gCmd',R),c=regl.ctrl||'auto',mode=c==='manette'?'manette':c==='clavier'?'clavier':c==='tactile'||TACTILE?'tactile':'clavier';
+    for(const[m2,nm]of[['tactile','Tactile'],['manette','Manette'],['clavier','Clavier']]){if(!G.cmd[m2])continue;const tr=el('tr',null,m2===mode?'ici':'',tb);el('td',nm,'',tr);el('td',G.cmd[m2],'',tr)}
+    const m=M();if(k<GUIDE.length-1)bouton(m,'Suivant : '+GUIDE[k+1].t+' →',()=>ecran('guideS',GUIDE[k+1].id));if(k>0)bouton(m,'← Précédent : '+GUIDE[k-1].t,()=>ecran('guideS',GUIDE[k-1].id));bouton(m,'← Tous les sujets',()=>ecran('guide'))}
+  else if(nom==='reglages'){T('Paramètres');el('div','Aide','etiq',R);bouton(M(),'Comment faire ? Guide illustré (voler, tirer, armes, missions…)',()=>{guideDe='reglages';ecran('guide')});const reg=(txt,k,min,max,pas)=>{el('div',txt,'etiq',R);const i=el('input',null,'',R);i.type='range';i.min=min;i.max=max;i.step=pas;i.value=regl[k];i.oninput=()=>{regl[k]=+i.value;ecrireRegl();if(k==='vol')bip(660,.08)}};
     reg('Volume des sons','vol',0,1.5,.05);reg('Sensibilité de la caméra','sens',.4,2,.05);el('div','Qualité graphique','etiq',R);const o=el('div',null,'onglets',R);['Automatique','Haute (pas de réduction)','Basse (appareil modeste)'].forEach((t,k)=>{const x=bouton(o,t,()=>{regl.qual=k;ecrireRegl();if(k===2)forcerBasse();ecran('reglages')});if(regl.qual===k)x.className='on'});
     el('div','La qualité basse s\'applique tout de suite. Pour revenir à une qualité plus haute, relancez le jeu.','petit',R);
     el('div','Commandes','etiq',R);const oc=el('div',null,'onglets',R);[['auto','Automatique'],['tactile','Tactile'],['manette','Manette'],['clavier','Clavier et souris']].forEach(([k,t])=>{if(k==='tactile'&&!TACTILE_DISPO)return;const x=bouton(oc,t,()=>{regl.ctrl=k;ecrireRegl();appliquerCtrl();ecran('reglages')});if((regl.ctrl||'auto')===k)x.className='on'});
     el('div',(regl.ctrl||'auto')==='auto'?'Automatique : boutons tactiles sur téléphone et tablette, clavier sur ordinateur ; la manette marche dans tous les cas.':regl.ctrl==='manette'?'Manette : les boutons tactiles sont masqués. Branchez ou appairez la manette, puis appuyez sur une touche.':regl.ctrl==='tactile'?'Tactile : joystick et boutons à l\'écran.':'Clavier et souris : pas de boutons à l\'écran.','petit',R);
     el('div','Manette · disposition PS4','etiq',R);const sm=el('div',null,'schemaManette',R);sm.innerHTML=SCHEMA_MANETTE;
     el('div','Dans les menus : croix directionnelle ou stick gauche pour choisir, ✕ pour valider, ○ pour revenir.','petit',R);retour(M())}}
+// ---------- guide « Comment faire ? » : sujets, animations et commandes ----------
+const SVG0='<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-weight="700"><rect width="320" height="170" fill="#0d1b22"/>';
+const ANIM=(v,k,d)=>`<animate attributeName="opacity" values="${v}" keyTimes="${k}" dur="${d}s" repeatCount="indefinite"/>`;
+const PERSO=(c)=>`<circle cy="-24" r="5" fill="#f3c9a0"/><rect x="-4.5" y="-19" width="9" height="12" rx="2" fill="${c||'#f7d038'}"/><rect x="-4" y="-7" width="3.2" height="7" fill="#e5e5e5"/><rect x=".8" y="-7" width="3.2" height="7" fill="#e5e5e5"/>`;
+const GUIDE=[
+ {id:'bouger',ic:'🏃',t:'Courir, sauter, grimper',r:'Se déplacer de toit en toit',
+  svg:SVG0+'<rect x="10" y="95" width="118" height="75" fill="#2f4a5a"/><rect x="178" y="95" width="62" height="75" fill="#3b5a6c"/><rect x="240" y="52" width="72" height="118" fill="#4a6b7d"/>'
+   +'<g><animateMotion dur="5s" repeatCount="indefinite" path="M28 95 L120 95 Q150 42 188 95 L236 95 L236 52 L290 52" keyPoints="0;.32;.55;.68;.86;1;1" keyTimes="0;.3;.5;.58;.8;.92;1" calcMode="linear"/>'+PERSO()+'</g>'
+   +'<text x="58" y="125" fill="#f7d038" font-size="12">1 · Courir</text><text x="126" y="34" fill="#f7d038" font-size="12">2 · Sauter</text><text x="248" y="40" fill="#f7d038" font-size="12">3 · Grimper</text>'
+   +'<rect x="250" y="120" width="56" height="7" rx="3" fill="#24343d"/><rect x="250" y="120" width="56" height="7" rx="3" fill="#5fc3ff"><animate attributeName="width" values="56;56;20;20;56" keyTimes="0;.62;.82;.9;1" dur="5s" repeatCount="indefinite"/></rect><text x="250" y="141" fill="#9fc4d6" font-size="9">souffle</text></svg>',
+  etapes:['Déplacez Calvine avec le joystick, les touches ou le stick gauche ; orientez la caméra en glissant sur l\'écran.','Courez pour prendre de l\'élan, puis sautez juste avant le bord pour passer d\'un toit à l\'autre.','Avancez contre un mur pour l\'escalader. L\'escalade consomme le souffle (barre bleue) ; il remonte quand vous vous reposez.','Les toits sont le chemin le plus sûr : les patrouilles surveillent surtout la rue.'],
+  cmd:{tactile:'Joystick à gauche · Course · Saut · glisser l\'écran pour la caméra',manette:'Stick gauche · R2 courir · ✕ sauter · stick droit caméra',clavier:'ZQSD ou flèches · Maj courir · Espace sauter · souris caméra'}},
+ {id:'voler',ic:'💰',t:'Voler de l\'argent',r:'Par derrière, en discret',
+  svg:SVG0+'<path d="M200 90 L310 38 L310 142 Z" fill="rgba(255,90,90,.16)"/><text x="268" y="94" fill="#ff8a8a" font-size="10">regard</text>'
+   +'<circle cx="200" cy="90" r="13" fill="#6b8fa3"/><path d="M212 90 h10" stroke="#fff" stroke-width="3"/>'
+   +'<g>'+ANIM('1;1;0;0','0;.78;.8;1',7)+'<rect x="189" y="60" width="22" height="12" rx="2" fill="#5fbf6a"/><text x="200" y="70" font-size="9" text-anchor="middle" fill="#0d1b22">F</text></g>'
+   +'<path d="M40 34 Q55 150 168 90" stroke="#f7d038" stroke-dasharray="4 5" fill="none" opacity=".55"/>'
+   +'<g><animateMotion dur="7s" repeatCount="indefinite" path="M40 34 Q55 150 168 90" keyPoints="0;1;1" keyTimes="0;.45;1" calcMode="linear"/><circle r="12" fill="#f7d038"><animate attributeName="r" values="12;12;8;8" keyTimes="0;.38;.46;1" dur="7s" repeatCount="indefinite"/></circle></g>'
+   +'<text x="70" y="160" fill="#f7d038" font-size="11" opacity="0">'+ANIM('0;0;1;1;0','0;.36;.42;.92;1',7)+'Mode discret : Calvine s\'abaisse</text>'
+   +'<text x="16" y="22" fill="#cfe3ec" font-size="11">Approchez par derrière</text>'
+   +'<g opacity="0">'+ANIM('0;0;1;1;0','0;.5;.54;.92;1',7)+'<rect x="78" y="44" width="176" height="26" rx="13" fill="#f7d038"/><text x="166" y="61" text-anchor="middle" font-size="11.5" fill="#14181c">Voler discrètement · 92 %</text></g>'
+   +'<circle cx="166" cy="57" r="4" fill="none" stroke="#fff" stroke-width="2.5" opacity="0"><animate attributeName="r" values="4;4;20;20" keyTimes="0;.7;.8;1" dur="7s" repeatCount="indefinite"/>'+ANIM('0;0;1;0;0','0;.69;.71;.81;1',7)+'</circle>'
+   +'<text x="214" y="60" fill="#5fdc7a" font-size="15" opacity="0">'+ANIM('0;0;1;0','0;.79;.84;1',7)+'<animate attributeName="y" values="60;60;34" keyTimes="0;.79;1" dur="7s" repeatCount="indefinite"/>+ 1 500 F</text></svg>',
+  etapes:['Repérez un billet vert au-dessus de la tête d\'un passant : il a de l\'argent sur lui.','Contournez-le pour arriver dans son dos, hors de son regard.','Passez en mode discret : Calvine s\'abaisse et se fait moins remarquer.','Tout près de lui, un texte jaune affiche votre pourcentage de réussite. Touchez-le pour voler.','De dos, accroupi et la nuit, vos chances montent. Les témoins, policiers et soldats proches les font baisser. Si vous ratez, le passant crie ou vous poursuit, et la police peut intervenir.'],
+  cmd:{tactile:'Bouton Discret, puis toucher le texte jaune « Voler discrètement »',manette:'Appui sur le stick gauche (discret), puis △',clavier:'C (discret), puis E'}},
+ {id:'tirer',ic:'🎯',t:'Tirer',r:'Le point blanc au centre',
+  svg:SVG0+'<rect x="0" y="128" width="320" height="42" fill="#26323a"/><rect x="170" y="44" width="50" height="84" fill="#2f4a5a"/><rect x="262" y="60" width="48" height="68" fill="#3b5a6c"/>'
+   +'<g transform="translate(240 128)"><g><animateTransform attributeName="transform" type="rotate" values="0;0;78;78" keyTimes="0;.66;.76;1" dur="4.5s" repeatCount="indefinite"/><circle cy="-50" r="8" fill="#d9a57a"/><rect x="-9" y="-42" width="18" height="28" rx="3" fill="#8e2b22"/><rect x="-8" y="-14" width="6" height="14" fill="#333"/><rect x="2" y="-14" width="6" height="14" fill="#333"/></g></g>'
+   +'<g transform="translate(70 170)"><circle cy="-62" r="16" fill="#3a2a20"/><rect x="-24" y="-46" width="48" height="46" rx="10" fill="#d8b341"/><rect x="18" y="-52" width="34" height="7" rx="2" fill="#222"/></g>'
+   +'<line x1="122" y1="121" x2="240" y2="84" stroke="#ffd36a" stroke-width="2.5" opacity="0">'+ANIM('0;0;1;0;1;0;0','0;.46;.48;.53;.57;.6;1',4.5)+'</line>'
+   +'<circle r="4.5" fill="#fff" stroke="#000" stroke-width="1"><animateMotion dur="4.5s" repeatCount="indefinite" path="M150 52 L240 84" keyPoints="0;1;1" keyTimes="0;.34;1" calcMode="linear"/><animate attributeName="fill" values="#fff;#fff;#ff4d4d;#ff4d4d;#fff" keyTimes="0;.33;.35;.8;1" dur="4.5s" repeatCount="indefinite"/></circle>'
+   +'<text x="12" y="22" fill="#cfe3ec" font-size="11" opacity="1">'+ANIM('1;1;0;0','0;.33;.35;1',4.5)+'1 · Placez le point sur la cible</text>'
+   +'<text x="12" y="22" fill="#ff8080" font-size="11" opacity="0">'+ANIM('0;0;1;1;0;0','0;.34;.36;.45;.46;1',4.5)+'2 · Le point devient rouge</text>'
+   +'<text x="12" y="22" fill="#f7d038" font-size="11" opacity="0">'+ANIM('0;0;1;1;0','0;.45;.46;.95;1',4.5)+'3 · Tirez !</text></svg>',
+  etapes:['Choisissez une arme. Dès que Calvine tient une arme à feu, la caméra passe au-dessus de son épaule et un point blanc apparaît au centre de l\'écran.','Ce point indique exactement où partent les balles : orientez la caméra pour le placer sur la cible.','Le point devient rouge quand il est sur une personne : c\'est le bon moment pour tirer.','Pour viser de plus près, maintenez la visée (clic droit ou L2). Le fusil de précision zoome.','Le chargeur se recharge tout seul quand il est vide. Sans munitions, passez à une armurerie.'],
+  cmd:{tactile:'Bouton Arme pour choisir · glisser l\'écran pour placer le point · bouton Tirer · en voiture : bouton Tirer',manette:'Croix ← → pour l\'arme · stick droit pour viser · □ pour tirer · L2 viser de près · R1 tirer en roulant',clavier:'X ou molette pour l\'arme · souris pour viser · clic gauche ou J pour tirer · clic droit viser de près · R recharger · G grenade'}},
+ {id:'armes',ic:'🔫',t:'Obtenir des armes',r:'Armureries et missions',
+  svg:SVG0+'<rect x="70" y="34" width="190" height="104" fill="#3b3f45"/><rect x="70" y="34" width="190" height="20" fill="#2a2d31"/><text x="165" y="49" text-anchor="middle" fill="#e07b39" font-size="12" letter-spacing="2">ARMURERIE</text>'
+   +'<rect x="140" y="80" width="50" height="58" fill="#7fa9bd" opacity=".55"/><rect x="0" y="138" width="320" height="32" fill="#26323a"/>'
+   +'<g><animateMotion dur="6s" repeatCount="indefinite" path="M20 150 L160 150" keyPoints="0;1;1" keyTimes="0;.35;1" calcMode="linear"/>'+PERSO()+'</g>'
+   +'<g opacity="0">'+ANIM('0;0;1;1;0','0;.36;.4;.94;1',6)+'<rect x="196" y="60" width="118" height="74" rx="8" fill="#0c1a22" stroke="#f7d038"/>'
+   +'<text x="205" y="78" fill="#f3f1e7" font-size="9.5">Pistolet · 3 000 F</text><text x="205" y="94" fill="#f3f1e7" font-size="9.5">P.-mitrailleur · 9 000 F</text><text x="205" y="110" fill="#f3f1e7" font-size="9.5">Fusil d\'assaut · 18 000 F</text><text x="205" y="126" fill="#f3f1e7" font-size="9.5">Munitions · dès 600 F</text>'
+   +'<rect x="200" y="67" width="110" height="15" rx="4" fill="none" stroke="#5fdc7a" stroke-width="2" opacity="0">'+ANIM('0;0;1;1;0','0;.6;.62;.94;1',6)+'</rect></g>'
+   +'<text x="12" y="22" fill="#cfe3ec" font-size="11">Entrez, choisissez, payez</text></svg>',
+  etapes:['Rendez-vous dans une armurerie : ouvrez le téléphone, application GPS, « Armurerie la plus proche », puis suivez le trajet jaune.','Devant la porte, un texte jaune « Armurerie » s\'affiche : touchez-le pour ouvrir le comptoir.','Achetez une arme (elle est livrée avec des munitions) ou des recharges pour les armes que vous possédez déjà.','Certaines missions offrent aussi une arme en récompense.','Entraînez-vous au stand de tir (GPS, « Stand de tir le plus proche »).'],
+  cmd:{tactile:'Toucher le texte jaune « Armurerie » devant la porte · bouton Tél. pour le GPS',manette:'△ devant la porte · croix ↓ pour le téléphone',clavier:'E devant la porte · T pour le téléphone'}},
+ {id:'missions',ic:'📋',t:'Réussir les missions',r:'Objectifs, faisceaux, trajet',
+  svg:SVG0+'<g stroke="#22323b" stroke-width="10"><path d="M0 40 H320 M0 95 H320 M0 150 H320 M60 0 V170 M150 0 V170 M240 0 V170"/></g>'
+   +'<path d="M40 150 H150 V95 H240 V40" fill="none" stroke="#f7d038" stroke-width="5" stroke-linecap="round" stroke-dasharray="330" stroke-dashoffset="330"><animate attributeName="stroke-dashoffset" values="330;0;0" keyTimes="0;.5;1" dur="5s" repeatCount="indefinite"/></path>'
+   +'<path d="M32 158 L40 140 L48 158 L40 153 Z" fill="#fff"/>'
+   +'<rect x="232" y="6" width="16" height="36" fill="#f7d038" opacity=".5">'+ANIM('.25;.8;.25','0;.5;1',1.4)+'</rect><circle cx="240" cy="40" r="7" fill="#f7d038"/>'
+   +'<g transform="translate(108 80)"><circle r="8" fill="#6b8fa3"/><text y="-12" text-anchor="middle" fill="#f7d038" font-size="16">!</text></g>'
+   +'<text x="254" y="68" fill="#5fdc7a" font-size="22" opacity="0">'+ANIM('0;0;1;1;0','0;.55;.6;.92;1',5)+'✓</text>'
+   +'<text x="12" y="22" fill="#cfe3ec" font-size="11">Suivez le trajet jusqu\'au faisceau</text></svg>',
+  etapes:['L\'objectif en cours est rappelé en haut de l\'écran et dans le menu Pause.','Le trajet à suivre s\'affiche sur la carte : jaune pour l\'objectif principal, orange pour une mission annexe.','Les faisceaux lumineux marquent les lieux : jaunes pour les balises, rouges pour les balises payantes, verts et bleus pour les étapes de l\'histoire.','Les habitants marqués d\'un « ! » proposent des missions annexes : parlez-leur pour accepter.','Restez discret près des patrouilles, passez par les toits et sauvegardez souvent (Pause, Sauvegarder).'],
+  cmd:{tactile:'Toucher le texte jaune pour parler ou accepter · toucher la carte pour l\'agrandir',manette:'△ parler ou accepter · Partager pour la grande carte',clavier:'E parler · M grande carte · P ou Échap pause'}},
+ {id:'argent',ic:'🚕',t:'Gagner de l\'argent',r:'Taxi, missions, métiers',
+  svg:SVG0+'<rect x="0" y="100" width="320" height="44" fill="#26323a"/><path d="M0 122 H320" stroke="#f7d038" stroke-dasharray="14 12" stroke-width="2"/>'
+   +'<g><animateTransform attributeName="transform" type="translate" values="-60 0;120 0;120 0;330 0" keyTimes="0;.35;.55;1" dur="6s" repeatCount="indefinite"/><rect x="0" y="96" width="58" height="22" rx="6" fill="#f7d038"/><rect x="10" y="88" width="34" height="12" rx="3" fill="#1f9d55"/><circle cx="12" cy="120" r="6" fill="#111"/><circle cx="46" cy="120" r="6" fill="#111"/></g>'
+   +'<g transform="translate(205 96)" opacity="1">'+ANIM('1;1;0;0','0;.4;.42;1',6)+PERSO('#3a75c4')+'</g>'
+   +'<text x="150" y="80" fill="#5fdc7a" font-size="16" opacity="0">'+ANIM('0;0;1;0','0;.75;.8;1',6)+'+ 2 300 F</text>'
+   +'<rect x="20" y="152" width="280" height="10" rx="5" fill="#24343d"/><rect x="20" y="152" width="80" height="10" rx="5" fill="#5fdc7a"><animate attributeName="width" values="80;80;200;200" keyTimes="0;.75;.85;1" dur="6s" repeatCount="indefinite"/></rect>'
+   +'<text x="12" y="22" fill="#cfe3ec" font-size="11">Courses de taxi : objectif 10 000 F</text></svg>',
+  etapes:['Au début du jeu, montez dans le taxi et lancez le service : chaque course rapporte de l\'argent, avec un pourboire si vous êtes rapide.','À 10 000 F, Maya vous confie la suite : les balises sur les toits.','Les missions principales et annexes rapportent bien plus.','Avec une ambulance ou une voiture de police, lancez un métier (ambulancier, justicier).','Le vol rapporte vite, mais attire la police. Une arrestation coûte 2 000 F.'],
+  cmd:{tactile:'Bouton Taxi dans un taxi (ou le métier du véhicule)',manette:'Croix ↑ pour le taxi',clavier:'F dans le véhicule'}},
+ {id:'vehicule',ic:'🚗',t:'Prendre un véhicule',r:'Monter, conduire, sortir',
+  svg:SVG0+'<rect x="0" y="118" width="320" height="52" fill="#26323a"/>'
+   +'<g><animateTransform attributeName="transform" type="translate" values="0 0;0 0;220 0" keyTimes="0;.55;1" dur="6s" repeatCount="indefinite"/><rect x="150" y="96" width="82" height="28" rx="8" fill="#c0392b"/><rect x="166" y="82" width="46" height="18" rx="5" fill="#8e2b22"/><circle cx="168" cy="126" r="8" fill="#111"/><circle cx="216" cy="126" r="8" fill="#111"/></g>'
+   +'<g opacity="1">'+ANIM('1;1;0;0','0;.4;.42;1',6)+'<g><animateMotion dur="6s" repeatCount="indefinite" path="M30 122 L150 122" keyPoints="0;1;1" keyTimes="0;.3;1" calcMode="linear"/>'+PERSO()+'</g></g>'
+   +'<g opacity="0">'+ANIM('0;0;1;0;0','0;.3;.33;.42;1',6)+'<rect x="112" y="52" width="70" height="22" rx="11" fill="#f7d038"/><text x="147" y="67" text-anchor="middle" font-size="11" fill="#14181c">Monter</text></g>'
+   +'<text x="12" y="22" fill="#cfe3ec" font-size="11">Approchez de la portière</text></svg>',
+  etapes:['Approchez-vous d\'un véhicule : voiture, moto, vélo, bateau ou avion.','Touchez « Monter » (ou le texte jaune) pour prendre le volant.','Prendre le véhicule de quelqu\'un devant témoins est un délit : la police peut vous rechercher.','Au garage, à l\'arrêt : réparation, peinture (qui efface l\'avis de recherche) et nitro.','Un véhicule abandonné disparaît au bout de 3 minutes.'],
+  cmd:{tactile:'Monter · Avancer · Frein · Reculer · ◀ ▶ · Sortir · Klaxon · Radio',manette:'△ monter · R2 accélérer · L2 freiner · □ sortir · appui stick gauche klaxon',clavier:'E monter ou sortir · ZQSD conduire · H klaxon · B radio · N nitro · G garage'}},
+ {id:'police',ic:'🚓',t:'Échapper à la police',r:'Étoiles et avis de recherche',
+  svg:SVG0+'<circle cx="120" cy="100" r="58" fill="rgba(229,72,77,.15)" stroke="#e5484d" stroke-dasharray="5 5"/>'
+   +'<g transform="translate(96 96)"><rect x="-14" y="-8" width="28" height="16" rx="4" fill="#3a75c4"/><rect x="-6" y="-13" width="12" height="5" fill="#e5484d">'+ANIM('1;.2;1','0;.5;1',.6)+'</rect></g>'
+   +'<circle r="8" fill="#f7d038"><animateMotion dur="5s" repeatCount="indefinite" path="M130 100 L290 120" keyPoints="0;1;1" keyTimes="0;.5;1" calcMode="linear"/></circle>'
+   +'<g font-size="20"><text x="200" y="40" fill="#f7d038">★<animate attributeName="fill" values="#f7d038;#f7d038;#55606a;#55606a" keyTimes="0;.55;.62;1" dur="5s" repeatCount="indefinite"/></text><text x="224" y="40" fill="#f7d038">★<animate attributeName="fill" values="#f7d038;#f7d038;#55606a;#55606a" keyTimes="0;.6;.67;1" dur="5s" repeatCount="indefinite"/></text><text x="248" y="40" fill="#f7d038">★<animate attributeName="fill" values="#f7d038;#f7d038;#55606a;#55606a" keyTimes="0;.65;.72;1" dur="5s" repeatCount="indefinite"/></text></g>'
+   +'<text x="12" y="22" fill="#cfe3ec" font-size="11">Sortez de leur vue</text></svg>',
+  etapes:['Un délit vu par un témoin déclenche un avis de recherche : les étoiles en haut de l\'écran montrent son niveau.','Plus il y a d\'étoiles, plus les policiers sont nombreux et décidés.','Sortez de leur champ de vision et éloignez-vous : l\'avis baisse avec le temps.','Au garage, la peinture du véhicule efface l\'avis de recherche ; l\'avocat (téléphone, après la mission « Leçon de tir ») le réduit pour 4 000 F.','Si vous êtes arrêté, vous payez une amende de 2 000 F. Les gangs, eux, perdent votre trace au-delà de 100 m.'],
+  cmd:{tactile:'Course pour fuir · Discret pour passer inaperçu',manette:'R2 courir · appui stick gauche discret',clavier:'Maj courir · C discret'}},
+ {id:'sante',ic:'❤️',t:'Santé et souffle',r:'Se soigner, reprendre son souffle',
+  svg:SVG0+'<text x="20" y="52" fill="#cfe3ec" font-size="11">Santé</text><rect x="20" y="60" width="280" height="16" rx="8" fill="#24343d"/><rect x="20" y="60" width="280" height="16" rx="8" fill="#e5484d"><animate attributeName="width" values="280;280;110;110;280" keyTimes="0;.15;.3;.45;1" dur="6s" repeatCount="indefinite"/></rect>'
+   +'<text x="20" y="112" fill="#cfe3ec" font-size="11">Souffle</text><rect x="20" y="120" width="280" height="12" rx="6" fill="#24343d"/><rect x="20" y="120" width="280" height="12" rx="6" fill="#5fc3ff"><animate attributeName="width" values="280;120;280" keyTimes="0;.5;1" dur="6s" repeatCount="indefinite"/></rect>'
+   +'<text x="160" y="30" text-anchor="middle" fill="#ff8080" font-size="13" opacity="0">'+ANIM('0;1;1;0;0','0;.15;.3;.32;1',6)+'Touché !</text>'
+   +'<text x="160" y="30" text-anchor="middle" fill="#5fdc7a" font-size="13" opacity="0">'+ANIM('0;0;1;1;0','0;.45;.5;.95;1',6)+'À l\'abri : la santé remonte seule</text></svg>',
+  etapes:['La santé (barre rouge) baisse sous les coups et les tirs.','Mettez-vous à l\'abri : quand plus personne ne vous touche, la santé remonte toute seule.','Le souffle (barre bleue) sert à grimper, esquiver et nager ; il se recharge au repos.','Un véhicule qui fume va exploser au bout de 10 secondes : sortez et éloignez-vous d\'au moins 5 m.'],
+  cmd:{tactile:'Esquive pour éviter un coup · Frapper pour se défendre',manette:'R1 esquiver · L1 se protéger · ○ frapper',clavier:'V esquiver · L se protéger · K coup puissant'}}];
+let guideDe='menu';
+
 const SCHEMA_MANETTE=`<svg viewBox="0 0 300 222" role="img" aria-label="Manette, disposition PS4">
 <defs><linearGradient id="gm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f363d"/><stop offset="1" stop-color="#15191d"/></linearGradient></defs>
 <g transform="translate(30,18)">
@@ -7099,9 +7230,22 @@ if(TACTILE){const b=$('bSaut');b.addEventListener('touchstart',()=>{sautTenu=tru
 /* ---------- cinématiques : plans de caméra, sous-titres, mise en contexte des missions ---------- */
 let cine=null,maya=null,mx=0,mz=0;
 const O=(c,r,h,a0,a1,d,qui,txt,hy)=>({c,r,h,a0,a1,d,qui,txt,hy:hy||0});
+const AIDES=(()=>{try{return JSON.parse(localStorage.getItem('mbolo-aides')||'{}')}catch(_){return{}}})();
+function aideVue(k){AIDES[k]=1;try{localStorage.setItem('mbolo-aides',JSON.stringify(AIDES))}catch(_){}}
+let aideT=0,aideVolT=0;
+function majAides(dt){if((aideT-=dt)>0)return;aideT=.4;
+  if(aideVolT>0){aideVolT-=.4;const b=$('invite'),on=aideVolT>0&&!!cibleVol();if(b.classList.contains('aideVol')!==on)b.classList.toggle('aideVol',on)}
+  if(AIDES.vol||etat!=='jeu'||auto||mission||dialogue||sport||voyage||J.y>1.5||temps<6||rech.niv>0||!peuple)return;
+  for(const p of passants){if(p.chef||!p.m.visible||p.eP||!p.bourse||!p.billet||!p.billet.visible||p.rang>densite)continue;const q=p.m.position,d=Math.hypot(q.x-J.x,q.z-J.z);if(d>2.2&&d<9){lancerAideVol(p);return}}}
+function lancerAideVol(p){aideVue('vol');const q=p.m.position,aB=p.m.rotation.y+PI,c=()=>[q.x,.95,q.z],I=$('cIllu');I.innerHTML=GUIDE.find(g=>g.id==='voler').svg;I.hidden=false;
+  jouerCine([O(c,5.2,1.7,aB+1.1,aB+.5,6.5,'Maya',"Regarde : le billet au-dessus de cette personne veut dire qu'elle a de l'argent sur elle. Tu peux le lui voler."),
+    O(c,3.4,.9,aB+.3,aB-.25,7.5,'Maya',"Approche-toi par derrière, hors de son regard. Passe en mode discret pour t'abaisser : bouton Discret, touche C ou appui sur le stick gauche."),
+    O(c,2.5,1.1,aB-.35,aB+.05,7.5,'Maya',"Tout près d'elle, un texte jaune affiche ton pourcentage de réussite. De dos et accroupi, il monte ; les policiers et les témoins proches le font baisser."),
+    O(c,4.2,1.9,aB+.05,aB+.6,7,'Maya',"Touche ce texte (ou E, ou △) pour voler. Si tu rates, la personne crie ou te poursuit, et la police peut arriver.")],
+    ()=>{I.hidden=true;I.innerHTML='';aideVolT=45;dire('À vous : approchez-vous par derrière, passez en discret, puis touchez le texte jaune.',false,5)})}
 function jouerCine(plans,fin){if(window.__sansCine||!plans||!plans.length){if(fin)fin();return}cine={plans,k:-1,t:0,fin};etat='cine';$('hud').hidden=true;$('tactile').hidden=true;$('cine').hidden=false;inviter(null);planSuivant()}
 function planSuivant(){const C=cine;if(!C)return;C.k++;C.t=0;if(C.k>=C.plans.length){finCine();return}const p=C.plans[C.k];$('cQui').textContent=p.qui||'';$('cTxt').textContent=p.txt||'';bip(520,.05,'sine',.02)}
-function finCine(){const C=cine;if(!C)return;cine=null;etat='jeu';$('cine').hidden=true;$('hud').hidden=false;$('tactile').hidden=!TACTILE;if(maya)maya.g.visible=false;saut=false;camOk=false;for(const k in touche)touche[k]=false;majMonde(J.x,J.z,6000,true);avant=performance.now();if(C.fin)C.fin()}
+function finCine(){const C=cine;if(!C)return;cine=null;$('cIllu').hidden=true;etat='jeu';$('cine').hidden=true;$('hud').hidden=false;$('tactile').hidden=!TACTILE;if(maya)maya.g.visible=false;saut=false;camOk=false;for(const k in touche)touche[k]=false;majMonde(J.x,J.z,6000,true);avant=performance.now();if(C.fin)C.fin()}
 function majCine(dt){const C=cine,p=C.plans[C.k];C.t+=dt;const u=Math.min(1,C.t/p.d),e=u*u*(3-2*u),c=typeof p.c==='function'?p.c():p.c,a=lerp(p.a0,p.a1,e);mx=c[0];mz=c[2];
   camera.position.set(c[0]+Math.sin(a)*p.r,Math.max(1.2,c[1]+p.h),c[2]+Math.cos(a)*p.r);camera.lookAt(c[0],c[1]+p.hy,c[2]);
   $('cNoir').style.opacity=C.t<.45?1-C.t/.45:C.t>p.d-.3?(C.t-(p.d-.3))/.3:0;if(maya&&maya.g.visible)maya.maj(dt,'repos',0);if(C.t>=p.d)planSuivant()}
@@ -7112,8 +7256,8 @@ function planIntro(){const a=antenne,s=soldats[0];if(creer&&!maya)try{maya=creer
     O([a.x,a.y,a.z],48,9,.4,1.4,7,'La Tour du Port',"L'antenne principale est éteinte. On murmure que c'est l'œuvre du Cercle, l'organisation du Gouverneur."),
     O(()=>[s.x,1.2,s.z],9,3.2,1,2.1,6.5,'Les patrouilles',"Ses hommes surveillent les balises relais posées dans la ville. Ils arrêtent quiconque s'en approche de trop près."),
     O(duo,4.4,.6,b-.5,b+.1,7,'Maya',"Calvine, tu es le seul coursier qui passe par les toits. Aïcha, la journaliste, a des preuves contre le Cercle. Sans réseau, elle ne peut rien publier."),
-    O(()=>TAXI0?[TAXI0.x,1,TAXI0.z]:duo(),7,2.6,.3,1.3,7,'Maya',"Mais d'abord, il te faut de l'argent. Un taxi t'attend juste en bas : monte, lance le service et fais trois courses."),
-    O(duo,3.6,.4,b+.3,b+.7,6.5,'Maya',"Ensuite, récupère quatre balises dans le centre-ville, faisceaux jaunes. Évite les patrouilles : reste discret, ou passe par les hauteurs."),
+    O(()=>TAXI0?[TAXI0.x,1,TAXI0.z]:duo(),7,2.6,.3,1.3,7,'Maya',"Mais d'abord, il te faut de l'argent. Un taxi t'attend juste en bas : monte, lance le service et fais des courses jusqu'à 10 000 F."),
+    O(duo,3.6,.4,b+.3,b+.7,6.5,'Maya',"Ensuite, récupère les balises sur les toits du centre-ville, faisceaux jaunes : le trajet s'affichera sur ta carte. Attention aux patrouilles : reste discret, ou passe par les hauteurs."),
     O(duo,3.2,.5,b-1.1,b-.8,4.5,'Calvine',"Compris : d'abord le taxi, ensuite les balises.")]}
 function planEtape(k){const E=ETAPES[k],P=(r,h,qui,txt,d)=>O([E.x,E.y,E.z],r,h,.6,1.6,d||7.5,qui,txt);
   if(k===1){const b=balises.find(q=>q.prix&&!q.prise)||balises[4];return[O([b.x,b.y,b.z],9,3.5,.3,1.5,8,'Maya',"Bien joué. Les autres balises sont verrouillées par des boîtiers payants, faisceaux rouges. Rends service aux habitants marqués d'un « ! » et gagne de quoi en ouvrir deux.")]}
@@ -7396,6 +7540,7 @@ function finTeaser(){if(!TS)return;const T=TS;TS=null;$('teaser').hidden=true;he
   etat='menu';$('accueil').hidden=false;majMonde(J.x,J.z,1500)}
 $('teaser').addEventListener('click',e=>{if(e.target.closest('#tSon'))return;finTeaser()});
 $('tPasser').addEventListener('click',e=>{e.stopPropagation();finTeaser()});
+{const toutEcran=e=>{if(etat!=='teaser'||!TS)return;if(e.target&&e.target.closest&&e.target.closest('#tSon,#tPasser'))return;if(e.type==='touchend'&&e.cancelable)e.preventDefault();finTeaser()};addEventListener('pointerup',toutEcran,true);addEventListener('touchend',toutEcran,{capture:true,passive:false})}
 $('tSon').addEventListener('click',e=>{e.stopPropagation();try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();audio.resume();initSon();radioInit()}catch(_){}$('tSon').hidden=true});
 addEventListener('keydown',e=>{if(etat==='teaser'&&!e.repeat)finTeaser()});
 const relL=[];let relCam=0;
@@ -7417,7 +7562,7 @@ function trame(maint){requestAnimationFrame(trame);
 const sur={x:0,y:0,z:0};
 function gardeFou(){if(Number.isFinite(J.x)&&Number.isFinite(J.y)&&Number.isFinite(J.z)){sur.x=J.x;sur.y=J.y;sur.z=J.z;return}J.x=sur.x;J.y=sur.y;J.z=sur.z;J.vx=J.vy=J.vz=0;if(auto&&!(Number.isFinite(auto.x)&&Number.isFinite(auto.z)&&Number.isFinite(auto.y))){auto.x=sur.x;auto.z=sur.z;auto.y=sur.y;auto.v=0;auto.vy=0}}
 function trameCorps(maint){gardeFou();
-  const dt=Math.min(.05,(maint-avant)/1000)*(etat==='jeu'?ralenti:1);avant=maint;pas(dt);if(etat==='teaser')majTeaser(dt);
+  const dt=Math.min(.05,(maint-avant)/1000)*(etat==='jeu'?ralenti:1);avant=maint;pas(dt);if(etat==='teaser')majTeaser(dt);if(etat==='jeu')majAides(dt);
   if(etat==='jeu'){$('chrono').textContent=fmt(temps);$('souffle').firstElementChild.style.width=J.souffle+'%';
     $('sante').firstElementChild.style.width=J.pv+'%';const et=$('etoiles'),nr=rech.niv;if(et.dataset.n!=nr){et.dataset.n=nr;et.textContent=nr?'Recherche '+'★'.repeat(nr)+'☆'.repeat(5-nr):''}const vg=$('vigil');vg.firstElementChild.style.width=vigilance*100+'%';vg.classList.toggle('rouge',vigilance>=1);majMini()}
   {const cp=$('compteur'),on=etat==='jeu'&&!!auto;if(cp.hidden===on)cp.hidden=!on}
@@ -7427,12 +7572,18 @@ function lancer(continuer,sv){if(!pret)return;try{audio=audio||new (window.Audio
   sv=sv||(continuer?lireSauvegarde():null);if(!sv){argent=0;faites={};etape=0;majArgent()}nouvelle(sv);etat='jeu';$('accueil').hidden=true;$('fin').hidden=true;$('pause').hidden=true;$('boutique').hidden=true;$('hud').hidden=false;$('tactile').hidden=!TACTILE;
   if(sv&&sv.pos)majMonde(J.x,J.z,6000,true);if(regl.qual===2)forcerBasse();if(!sv)ecrire('auto');autoT=0;avant=performance.now();initSon();
   if(!sv){prologue={n:0,fait:false};placerTaxiIntro();majHud()}
-  const annonce=()=>dire(!prologue.fait?'Prologue : montez dans le taxi et faites 3 courses pour gagner de l\'argent.':etape<ETAPES.length?'Étape '+(etape+1)+' / '+ETAPES.length+' : '+ETAPES[etape].t:'Jeu libre',false,4.5);if(sv)annonce();else jouerCine(planIntro(),annonce)}
-$('invite').addEventListener('click',()=>{if(inviteFn)inviteFn()});$('dOui').addEventListener('click',accepter);$('dNon').addEventListener('click',fermerDialogue);
+  const annonce=()=>dire(!prologue.fait?'Prologue : montez dans le taxi et faites des courses jusqu\'à '+fcfa(OBJ_PRO)+'.':etape<ETAPES.length?'Étape '+(etape+1)+' / '+ETAPES.length+' : '+ETAPES[etape].t:'Jeu libre',false,4.5);if(sv)annonce();else jouerCine(planIntro(),annonce)}
+$('invite').addEventListener('click',()=>{if(inviteFn)inviteFn()});
+const PAYSAGE={essai:0,ok:false};
+function verrouPaysage(){if(!TACTILE_DISPO)return;const so=screen.orientation,lock=()=>{if(so&&so.lock)so.lock('landscape').then(()=>{PAYSAGE.ok=true}).catch(()=>{})};const d=document.documentElement;
+  if(!document.fullscreenElement&&d.requestFullscreen&&Date.now()-PAYSAGE.essai>8000){PAYSAGE.essai=Date.now();try{d.requestFullscreen({navigationUI:'hide'}).then(lock,lock)}catch(_){lock()}}else if(!PAYSAGE.ok)lock()}
+addEventListener('pointerup',e=>{if(e.pointerType!=='mouse')verrouPaysage()},true);addEventListener('touchend',verrouPaysage,true);
+function majOrient(){const p=TACTILE_DISPO&&innerHeight>innerWidth*1.05,o=$('tourner');if(o.hidden===!p)return;o.hidden=!p;if(p&&etat==='jeu')pause(true)}
+addEventListener('resize',majOrient);addEventListener('orientationchange',()=>setTimeout(majOrient,250));majOrient();$('dOui').addEventListener('click',accepter);$('dNon').addEventListener('click',fermerDialogue);
 $('jouer').addEventListener('click',()=>lancer(true));$('neuf').addEventListener('click',()=>lancer(false));$('rejouer').addEventListener('click',()=>lancer(false));
 {const sp=$('splash'),fin=()=>{if(sp.classList.contains('fini'))return;sp.classList.add('fini');setTimeout(()=>sp.hidden=true,950);let n=0;const essai=()=>{if(debutTeaser()||teaserFait||++n>40)return;setTimeout(essai,350)};setTimeout(essai,500)};const tm=setTimeout(fin,window.__sansCine?0:6200);sp.addEventListener('click',()=>{clearTimeout(tm);fin()});addEventListener('keydown',()=>{clearTimeout(tm);fin()},{once:true})}
 auDepart();etatBouton();majMonde(J.x,J.z,6000,true);demarrerChargement();requestAnimationFrame(trame);
-window.__jeu={poserRelief,leverRelief,get SA(){return{get TS(){return TS},debutTeaser,majTeaser,finTeaser,prologue,coursePrologue,TAXI0,klaxon,retirerVehicule,COMP,SAUTS,SAUT,sautsFaits,GARAGES,essayerCode,HP,MASQUES,masquesPris,METIER,basculerMetier,RADIO,changerRadio,nitro,ralenti,NITRO}},scene,Hs,REL,MISSIONS,ACTIVITES,get prog(){return prog},set prog(v){prog=v},get mission(){return mission},get rdv(){return rdv},accepterMission,lancerMission,etapeOK,echecMission,ouvrirTel,fermerTel,ETP,set etapeV(v){etape=v},proches,appui,bloque,ASCS,LIGNES,rames,get voyage(){return voyage},partir,descendre,taxi,basculerTaxi,get gpsCible(){return gpsCible},set gpsCible(v){gpsCible=v},menuChoix,rayon,persos,cibleAuto,arsenal,ennemis,ARMES,donnerArme,choisirArme,tirer,nouvelEnnemi,explosion,degatsVehicule,mourir,HOPITAUX,CIBLES,extrasTir,get gangT(){return gangT},set gangT(v){gangT=v},bande,payerBande,majGangs,son,klaxonner,jouerCine,finCine,planSuivant,planIntro,planEtape,get cine(){return cine},rech,agents,frappe,stats,scores,tenue,garde,SV,SPOTS,SHOPS,CATA,attaquer,esquiver,signaler,pause,ecran,ecrire,lancer,habiller,ouvrirBoutique,fermerBoutique,get sport(){return sport},get butin(){return butin},bateaux,surEau,J,soldats,passants,balises,antenne,boites,pas,renderer,camera,get joueur(){return joueur},get pret(){return pret},get etat(){return etat},get nb(){return nbPrises},get payees(){return nbPayees},set argent(v){argent=v;majArgent()},engins,gardes,POSTES,gp,calculerTrajet,get trajet(){return trajet},arrete,cmd,autos,DONNEURS,FOOT,BASK,action,accepter,get auto(){return auto},get annexe(){return annexe},get argent(){return argent},get V(){return V},get etape(){return etape},ETAPES,set lacet(v){lacet=v},set tangage(v){tangage=v},set heure(v){heure=v},sommet,zone,blocs,cellules,majMonde,get file(){return file.length+(enCours?1:0)}};
+window.__jeu={get V19(){return{aideVisee,epaule,armurerieProche,ouvrirArmurerie,finPrologue,coursePrologue,OBJ_PRO,AIDES,lancerAideVol,majAides,GUIDE,ecran,get epA(){return epA},get viseT(){return viseT},arsenal,ARMES,donnerArme,choisirArme,tirer,lieux,get ARMU(){return ARMU},balises,passants,get prologue(){return prologue},set prologue(v){prologue=v},get trajet(){return trajet},get trajetC(){return trajetC},majTrajet,majOrient,pause,get cine(){return cine},finCine,majArmes,majCamera,get lacet(){return lacet},set lacet(v){lacet=v},get tangage(){return tangage},set tangage(v){tangage=v},set trajetT(v){trajetT=v}}},poserRelief,leverRelief,get SA(){return{get TS(){return TS},debutTeaser,majTeaser,finTeaser,prologue,coursePrologue,TAXI0,klaxon,retirerVehicule,COMP,SAUTS,SAUT,sautsFaits,GARAGES,essayerCode,HP,MASQUES,masquesPris,METIER,basculerMetier,RADIO,changerRadio,nitro,ralenti,NITRO}},scene,Hs,REL,MISSIONS,ACTIVITES,get prog(){return prog},set prog(v){prog=v},get mission(){return mission},get rdv(){return rdv},accepterMission,lancerMission,etapeOK,echecMission,ouvrirTel,fermerTel,ETP,set etapeV(v){etape=v},proches,appui,bloque,ASCS,LIGNES,rames,get voyage(){return voyage},partir,descendre,taxi,basculerTaxi,get gpsCible(){return gpsCible},set gpsCible(v){gpsCible=v},menuChoix,rayon,persos,cibleAuto,arsenal,ennemis,ARMES,donnerArme,choisirArme,tirer,nouvelEnnemi,explosion,degatsVehicule,mourir,HOPITAUX,CIBLES,extrasTir,get gangT(){return gangT},set gangT(v){gangT=v},bande,payerBande,majGangs,son,klaxonner,jouerCine,finCine,planSuivant,planIntro,planEtape,get cine(){return cine},rech,agents,frappe,stats,scores,tenue,garde,SV,SPOTS,SHOPS,CATA,attaquer,esquiver,signaler,pause,ecran,ecrire,lancer,habiller,ouvrirBoutique,fermerBoutique,get sport(){return sport},get butin(){return butin},bateaux,surEau,J,soldats,passants,balises,antenne,boites,pas,renderer,camera,get joueur(){return joueur},get pret(){return pret},get etat(){return etat},get nb(){return nbPrises},get payees(){return nbPayees},set argent(v){argent=v;majArgent()},engins,gardes,POSTES,gp,calculerTrajet,get trajet(){return trajet},arrete,cmd,autos,DONNEURS,FOOT,BASK,action,accepter,get auto(){return auto},get annexe(){return annexe},get argent(){return argent},get V(){return V},get etape(){return etape},ETAPES,set lacet(v){lacet=v},set tangage(v){tangage=v},set heure(v){heure=v},sommet,zone,blocs,cellules,majMonde,get file(){return file.length+(enCours?1:0)}};
 })();
 </script>
 <div id="aideInstall" hidden style="position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:16px">
